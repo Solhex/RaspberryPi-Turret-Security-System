@@ -1,0 +1,40 @@
+import os
+import logging
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+
+def init_logging(log_name, log_folder:str='./logs', max_logs:int=10):
+    if not os.path.exists(log_folder):
+        os.mkdir(log_folder)
+    else:
+        logs_dir = os.listdir(log_folder)
+        logs_in_dir = []
+        for i in logs_dir:
+            if '.log' in i:
+                logs_in_dir.append(i)
+        if len(logs_in_dir) > max_logs:
+            logs_timed = {}
+            for i in logs_in_dir:
+                logs_timed[i] = os.path.getmtime(f'{log_folder}/{i}')
+            for i in range(len(logs_in_dir)-max_logs):
+                oldest_log = min(logs_timed, key=logs_timed.get)
+                os.remove(
+                    f'{log_folder}/{oldest_log}')
+                del logs_timed[oldest_log]
+
+    log = logging.getLogger(log_name)
+    log.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter(
+        '[%(asctime)s]:%(levelname)s:%(name)s:%(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+
+    dt_string = datetime.now().strftime('%Y-%m-%d-%H%M%S')
+    handler = RotatingFileHandler(
+        f'logs/{dt_string}.log', mode='w',
+        maxBytes=5*1024*1024, backupCount=5, 
+        encoding=None, delay=0)
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+
+    return log
