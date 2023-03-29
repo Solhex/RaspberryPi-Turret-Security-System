@@ -60,12 +60,34 @@ f_servo.start(2.5)
 cap = cv2.VideoCapture(0)
 past_time = 0
 detector = PoseDetector()
+x_leeway = 20
+y_leeway = 20
 
 try:
     while True:
         success, img = cap.read()
         img = detector.find_pose(img)
         lm_dict = detector.find_position()
+
+        if 12 in lm_dict.keys() and 11 in lm_dict.keys():
+            print(f'Targeting X:{(lm_dict[12][0] + lm_dict[11][0]) / 2} Y:{(lm_dict[12][1] + lm_dict[11][1]) / 2}')
+            img_h, img_w, img_c = img.shape
+            x_range = range((img_h/2)-x_leeway, (img_h/2)+x_leeway+1)
+            y_range = range((img_w/2)-y_leeway, (img_w/2)+y_leeway+1)
+            x_target = (lm_dict[12][0] + lm_dict[11][0]) / 2
+            y_target = (lm_dict[12][1] + lm_dict[11][1]) / 2
+
+            while x_target not in x_range:
+                if x_target in range(0, (img_h/2)-x_leeway):
+                    log.debug(' Under the range')
+                elif x_target in range((img_h/2)+x_leeway-1, img_h+1):
+                    log.debug(' Over the range')
+
+            while y_target not in y_range:
+                if y_target in range(0, (img_w/2)-y_leeway):
+                    log.debug(' Under the range')
+                elif x_target in range((img_w/2)+y_leeway-1, img_w+1):
+                    log.debug(' Over the range')
 
         for i in range(5):
             y_servo.ChangeDutyCycle(i)
@@ -79,7 +101,6 @@ try:
             past_time = current_time
 
             cv2.putText(img, str(int(fps)), (70, 50), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 0), 3)
-
             cv2.imshow('Image', img)
             cv2.waitKey(1)
 except KeyboardInterrupt:
