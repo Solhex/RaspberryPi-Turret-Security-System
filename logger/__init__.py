@@ -9,7 +9,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
 
-def init_logging(
+def init_outfile_logging(
         log_name, log_folder: str = './logs',
         max_logs: int = 10, log_level=logging.DEBUG):
     """Initializes the python logging function with the added feature
