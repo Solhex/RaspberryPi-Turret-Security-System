@@ -13,12 +13,13 @@ import os
 import picamera
 import cv2
 import mediapipe as mp
-import smtplib
+import smtplib as smtp
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from subprocess import Popen
 import logger
+import config
 from poseDetectionModule import PoseDetector
 
 
@@ -102,6 +103,14 @@ def gpio_pwm_setup(
     return servo
 
 
+def send_email(email_address: str, email_password: str, receiver: str,
+               message: str, domain: str = 'smtp.gmail.com', port: int = 465):
+    with smtp.SMTP_SSL(domain, port) as connection:
+        connection.login(email_address, email_password)
+        connection.sendmail(from_addr=email_address, to_addrs=receiver,
+                            msg=message)
+
+
 def main():
     log = logger.init_outfile_logging(log_name=__name__)
     log.debug(' Logging initiated.')
@@ -161,17 +170,35 @@ def main():
 
             if GPIO.output(11) is True and door_opened() is False:
                 door_opened.switch_time(bool_switch_time)
+                subject = 'Security Alert: Door Opened'
+                body = 'A door opening has been detected.'
+                send_email(email_addr=email_addr,
+                           email_passwd=email_passwd,
+                           email_receiver=email_receiver,
+                           message=f'Subject: {subject}\n\n{body}')
                 log.info(' door opening detected, trigger will '
                          f'be active for {bool_switch_time/60} minutes')
 
             if GPIO.output(12) is True and motion_detected() is False:
                 motion_detected.switch_time(bool_switch_time)
+                subject = 'Security Alert: Motion Detected'
+                body = 'Motion has been detected.'
+                send_email(email_addr=email_addr,
+                           email_passwd=email_passwd,
+                           email_receiver=email_receiver,
+                           message=f'Subject: {subject}\n\n{body}')
                 log.info(' motion detected, trigger will '
                          f'be active for {bool_switch_time/60} minutes')
 
             if len(lm_dict) != 0 and human_detected() is False:
                 human_detected.switch_time(bool_switch_time
                                            * human_multiplier)
+                subject = 'Security Alert: Human Detected'
+                body = 'ALERT: A humanoid figure has been detected.'
+                send_email(email_addr=email_addr,
+                           email_passwd=email_passwd,
+                           email_receiver=email_receiver,
+                           message=f'Subject: {subject}\n\n{body}')
                 log.info(' humanoid figure detected, trigger will be'
                          'active for '
                          f'{bool_switch_time * human_multiplier / 60}'
