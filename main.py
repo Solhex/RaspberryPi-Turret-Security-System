@@ -10,7 +10,7 @@ import RPi.GPIO as GPIO
 import time
 import sys
 import os
-import picamera
+import picamera2
 import cv2
 import mediapipe as mp
 import smtplib as smtp
@@ -35,6 +35,8 @@ class TimedBool:
         self.val = init_val
         self.switch_time = 0
         self.time_switched = 0
+        if logger is not None:
+            logger.debug(f' TimedBool initiated.')
 
     def __call__(self):
         if self.switch_time == 0:
@@ -46,13 +48,17 @@ class TimedBool:
             self.time_switched = 0
             self.val = not self.val
             if logger is not None:
-                logger.info(f' ')
+                logger.info(' A timed bool has switched '
+                            f'back to {self.val}.')
         return self.val
 
     def switch_for(self, time_switched: int = 5):
         self.switch_time = int(time.time())
         self.time_switched = time_switched
         self.val = not self.val
+        if logger is not None:
+            logger.info(f' A timed bool has switched to {self.val} '
+                        f'for {self.time_switched / 60} minutes.')
 
 
 def gpio_pin_setup(
@@ -115,6 +121,8 @@ def main():
     log = logger.init_outfile_logging(log_name=__name__)
     log.debug(' Logging initiated.')
 
+    camera = PiCamera()
+
     GPIO.setmode(GPIO.BOARD)
     log.info(' mode set as board.')
     GPIO.setwarnings(False)
@@ -168,68 +176,73 @@ def main():
             img = detector.find_pose(img)
             lm_dict = detector.find_position()
 
-            if GPIO.output(11) is True and door_opened() is False:
+            if GPIO.input(11) is True and door_opened() is False:
                 door_opened.switch_time(bool_switch_time)
+                current_time = time.asctime()
                 subject = 'Security Alert: Door Opened'
                 body = 'A door opening has been detected.'
-                send_email(email_addr=email_addr,
-                           email_passwd=email_passwd,
-                           email_receiver=email_receiver,
+                send_email(email_addr=config.email_addr,
+                           email_passwd=config.email_passwd,
+                           email_receiver=config.email_receiver,
                            message=f'Subject: {subject}\n\n{body}')
-                log.info(' door opening detected, trigger will '
-                         f'be active for {bool_switch_time/60} minutes')
+                log.info(f' Door opening detected at {current_time}'
+                         ', trigger will be active for '
+                         f'{bool_switch_time / 60} minutes.')
 
-            if GPIO.output(12) is True and motion_detected() is False:
+            if GPIO.input(12) is True and motion_detected() is False:
                 motion_detected.switch_time(bool_switch_time)
+                current_time = time.asctime()
                 subject = 'Security Alert: Motion Detected'
                 body = 'Motion has been detected.'
-                send_email(email_addr=email_addr,
-                           email_passwd=email_passwd,
-                           email_receiver=email_receiver,
+                send_email(email_addr=config.email_addr,
+                           email_passwd=config.email_passwd,
+                           email_receiver=config.email_receiver,
                            message=f'Subject: {subject}\n\n{body}')
-                log.info(' motion detected, trigger will '
-                         f'be active for {bool_switch_time/60} minutes')
+                log.info(f' Motion detected at {current_time}'
+                         ', trigger will be active for '
+                         f'{bool_switch_time / 60} minutes.')
 
             if len(lm_dict) != 0 and human_detected() is False:
                 human_detected.switch_time(bool_switch_time
                                            * human_multiplier)
+                current_time = time.asctime()
                 subject = 'Security Alert: Human Detected'
                 body = 'ALERT: A humanoid figure has been detected.'
-                send_email(email_addr=email_addr,
-                           email_passwd=email_passwd,
-                           email_receiver=email_receiver,
+                send_email(email_addr=config.email_addr,
+                           email_passwd=config.email_passwd,
+                           email_receiver=config.email_receiver,
                            message=f'Subject: {subject}\n\n{body}')
-                log.info(' humanoid figure detected, trigger will be'
-                         'active for '
+                log.info(' Humanoid figure detected at '
+                         f'{current_time}, trigger will be active for '
                          f'{bool_switch_time * human_multiplier / 60}'
-                         ' minutes')
+                         ' minutes.')
 
-            if 12 in lm_dict.keys() and 11 in lm_dict.keys():
-                print('Targeting X:'
-                      f'{(lm_dict[12][0] + lm_dict[11][0]) / 2} '
-                      f'Y:{(lm_dict[12][1] + lm_dict[11][1]) / 2}')
-                img_h, img_w, img_c = img.shape
-                x_range = range((img_h / 2) - x_leeway,
-                                (img_h / 2) + x_leeway + 1)
-                y_range = range((img_w / 2) - y_leeway,
-                                (img_w / 2) + y_leeway + 1)
-                x_target = (lm_dict[12][0] + lm_dict[11][0]) / 2
-                y_target = (lm_dict[12][1] + lm_dict[11][1]) / 2
+                if 12 in lm_dict.keys() and 11 in lm_dict.keys():
+                    log.info('Targeting X:'
+                             f'{(lm_dict[12][0] + lm_dict[11][0]) / 2} '
+                             f'Y:{(lm_dict[12][1] + lm_dict[11][1]) / 2}')
+                    img_h, img_w, img_c = img.shape
+                    x_range = range((img_h / 2) - x_leeway,
+                                    (img_h / 2) + x_leeway + 1)
+                    y_range = range((img_w / 2) - y_leeway,
+                                    (img_w / 2) + y_leeway + 1)
+                    x_target = (lm_dict[12][0] + lm_dict[11][0]) / 2
+                    y_target = (lm_dict[12][1] + lm_dict[11][1]) / 2
 
-                while x_target not in x_range:
-                    if x_target in range(0, (img_h / 2) - x_leeway):
-                        log.debug(' Under the range')
-                    elif x_target in range((img_h / 2) + x_leeway - 1,
-                                           img_h + 1):
-                        log.debug(' Over the range')
+                    while x_target not in x_range:
+                        if x_target in range(0, (img_h / 2) - x_leeway):
+                            log.debug(' Under the range')
+                        elif x_target in range((img_h / 2) + x_leeway - 1,
+                                               img_h + 1):
+                            log.debug(' Over the range')
 
-                while y_target not in y_range:
-                    if y_target in range(0,
-                                         (img_w / 2) - y_leeway):
-                        log.debug(' Under the range')
-                    elif x_target in range((img_w / 2) + y_leeway - 1,
-                                           img_w + 1):
-                        log.debug(' Over the range')
+                    while y_target not in y_range:
+                        if y_target in range(0,
+                                             (img_w / 2) - y_leeway):
+                            log.debug(' Under the range')
+                        elif x_target in range((img_w / 2) + y_leeway - 1,
+                                               img_w + 1):
+                            log.debug(' Over the range')
 
             for i in range(5):
                 y_servo.ChangeDutyCycle(i)
