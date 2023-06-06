@@ -18,6 +18,8 @@ from email.mime.image import MIMEImage  # For adding email images.
 import logger  # Local logging module for additional logging features.
 import config  # Imports config, which is just user variables.
 from objectDetectionModule import ObjectDetector  # For object detection.
+
+
 # Imports all the necessary modules used for noted reasons.
 
 # DEBUG: Detailed information, typically for diagnosing problems.
@@ -389,7 +391,7 @@ def main():
                 raise RuntimeError(
                     'Unable to read from webcam.'
                     'Please verify your webcam in config.py.'
-                    )
+                )
             # Stores if the camera was successfully accessed and the current
             # visual feed of the camera. If the camera couldn't be accessed
             # it will cause a RuntimeError and the program would stop.
@@ -577,7 +579,7 @@ def main():
                     'left': int(
                         (img_w / 2)
                         - x_leeway
-                        ),
+                    ),
                     'right': int(
                         (img_w / 2)
                         + x_leeway
@@ -654,9 +656,11 @@ def main():
                 # clockwise == right/down == 500-1500
                 # anti == left/up == 1500-2500
 
-            if (entity_in_xrange
+            if (config.turret_active
+                    and entity_in_xrange
                     and entity_in_yrange
-                    and config.turret_active):
+                    and (door_opened()
+                         or motion_detected())):
                 # Checks if the turret is centred and if the turret is not
                 # disabled and if so shoot, else stop.
                 f_servo.set_servo_pw(fpulsewidth)
