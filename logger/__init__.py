@@ -13,15 +13,16 @@ def init_outfile_logging(
         log_name: str, log_folder: str = './logs',
         max_logs: int = 10, log_level=logging.DEBUG):
     """Initializes the python logging function with the added feature
-    of an external folder with temporary log files, used for personal use.
+    of an external folder with temporary log files, used for personal
+    use.
     
-    :param log_name: The name of the file to be logged usually `__name__`
-        should be passed through by the main file
+    :param log_name: The name of the file to be logged usually
+        `__name__` should be passed through by the main file
     :type log_name: str
     :param log_folder: The path to the log folder, defaults to `./logs`
     :type log_folder: str, optional
-    :param max_logs: The maximum amount of logs to be present within the log 
-        folder at a time, defaults to 10
+    :param max_logs: The maximum amount of logs to be present within
+        the logs folder at a time, defaults to 10
     :type max_logs: int, optional
     :param log_level: 
     :type log_level: class`logging.logger`, optional
@@ -51,15 +52,16 @@ def init_outfile_logging(
             logs_timed = {}
             for i in logs_in_dir:
                 logs_timed[i] = os.path.getmtime(f'{log_folder}/{i}')
-            # Gets each log and checks it modification time and adds it into
-            # a dictionary.
+            # Gets each log and checks it modification time and adds
+            # it into a dictionary.
 
             for i in range(len(logs_in_dir) - max_logs):
                 oldest_log = min(logs_timed, key=logs_timed.get)
                 os.remove(
                     f'{log_folder}/{oldest_log}')
                 del logs_timed[oldest_log]
-            # For every file over the max_logs delete the oldest log file.
+            # For every file over the max_logs delete the oldest
+            # log file.
 
     log = logging.getLogger(log_name)
     log.setLevel(log_level)
