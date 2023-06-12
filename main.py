@@ -3,7 +3,7 @@ here: https://www.thingiverse.com/thing:953753,the only modified part
 is the addition of a picamera on the y-axis of the barrel.
 """
 
-__version__ = '1.0'
+__version__ = '1.02'
 __author__ = 'Fvern Witherial'
 
 import RPi.GPIO as GPIO  # To control GPIO inputs and outputs.
@@ -12,12 +12,17 @@ import cv2  # For camera functionality.
 import os  # For manipulating the operating system.
 import pigpio  # To control servos more smoothly.
 import smtplib as smtp  # For emailing
-from email.mime.multipart import MIMEMultipart  # For formatting emails.
-from email.mime.text import MIMEText  # For formatting email text.
-from email.mime.image import MIMEImage  # For adding email images.
-import logger  # Local logging module for additional logging features.
-import config  # Imports config, which is just user variables.
-from objectDetectionModule import ObjectDetector  # For object detection.
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+# For formatting emails, email message, and email images.
+
+import logger
+import config
+from objectDetectionModule import ObjectDetector
+# Imports the local logging module for additional logging features.
+# Imports the config file which is just user set variables.
+# Allows for object detection.
 
 
 # Imports all the necessary modules used for noted reasons.
@@ -33,16 +38,19 @@ class TimedBool:
     """Creates a boolean value that is toggled on/off after the inputted
     time passes.
     
-    :param init_val: The default value of the boolean, defaults to `True`
+    :param init_val: The default value of the boolean, defaults to
+        `True`
     :type init_val: bool, optional
-    :param logger: An optional logger addon to log switches, defaults to None
+    :param logger: An optional logger addon to log switches, defaults
+        to None
     :type logger: class`logging.logger`, optional
     """
 
     def __init__(self,
                  init_val: bool = False,
                  logger=None):
-        """Constructs the timed boolean, setting the variables later needed.
+        """Constructs the timed boolean, setting the variables later
+        needed.
         """
 
         self.val = init_val
@@ -53,12 +61,14 @@ class TimedBool:
             self.logger.debug(f' TimedBool initiated.')
 
     def __call__(self):
-        """Changes what happens when the TimedBool is directly called upon to
-        firstly check if the time passed through has passed, if no switch
-        time set by return the default value, then return the current value.
+        """Changes what happens when the TimedBool is directly called
+        upon to firstly check if the time passed through has passed,
+        if no switch time set by return the default value, then return
+        the current value.
         
-        :return: The default state if no time set or time set has passed,
-            and the opposite bool value if time set has not passed
+        :return: The default state if no time set or time set has
+            passed, and the opposite bool value if time set has not
+            passed
         :rtype: bool
         """
 
@@ -77,10 +87,11 @@ class TimedBool:
         return self.val
 
     def switch_for(self, time_switched: int = 5):
-        """Sets the time for how long the TimedBool's value will be switched.
+        """Sets the time for how long the TimedBool's value will be
+        switched.
         
-        :param time_switched: The amount of seconds needed to pass before
-            returning to the default state, defaults to 5
+        :param time_switched: The amount of seconds needed to pass
+            before returning to the default state, defaults to 5
         :type time_switched: int, optional
         """
 
@@ -98,12 +109,14 @@ class PWMGpio:
 
     :param pwm: An initialised pigpio class to send commands to
     :type pwm: class`pigpio.pi`
-    :param pin: The gpio number of the pin based on broadcom SOC channel
+    :param pin: The gpio number of the pin based on broadcom SOC
+        channel
     :type pin: int
-    :param freq: The frequency (in Hz) of the pulse width modulation on the
-        GPIO pin
+    :param freq: The frequency (in Hz) of the pulse width modulation
+        on the GPIO pin
     :type freq: int
-    :param logger: An optional logger addon to log switches, defaults to None
+    :param logger: An optional logger addon to log switches, defaults
+        to None
     :type logger: class`logging.logger`, optional
     """
 
@@ -126,7 +139,8 @@ class PWMGpio:
     def set_servo_pw(self, pulsewidth: int, sleep_time: float = 0.5):
         """Sets the pulsewidth of the pin for servo use.
 
-        :param pulsewidth: The pulsewidth to be transmitted to the servo
+        :param pulsewidth: The pulsewidth to be transmitted to the
+            servo
         :type pulsewidth: int
         :param sleep_time: The sleep time after setting pulsewidth,
             defaults to 0.5
@@ -134,7 +148,7 @@ class PWMGpio:
         """
         self.pwm.set_servo_pulsewidth(self.pin, pulsewidth)
         if self.logger is not None:
-            self.logger.info(f' GPIO PIN {self.pin} pusewidth set as {pulsewidth}.')
+            self.logger.info(f' GPIO PIN {self.pin} pulsewidth set as {pulsewidth}.')
         time.sleep(sleep_time)
 
 
@@ -149,7 +163,9 @@ def gpio_pin_setup(
     """
 
     def log_message(mesg, logger=logger):
-        """Helps clean up the code of if statements for better readability."""
+        """Helps clean up the code of if statements for better
+        readability.
+        """
         if logger is not None:
             logger.info(mesg)
 
@@ -174,23 +190,26 @@ def send_email(email_address: str, email_password: str, email_receiver: str,
     
     :param email_address: The sender email address
     :type email_address: str
-    :param email_password: The password (or app password) of the sender email
-        address
+    :param email_password: The password (or app password) of the
+        sender email address
     :type email_password: str
-    :param email_receiver: The email address that the email will be sent to
+    :param email_receiver: The email address that the email will be
+        sent to
     :type email_receiver: str
     :param subject: The text subject header of the email to be sent
     :type subject: str
     :param body: The text body of the email to be sent
     :type body: str
-    :param image_path: The path to an optional image that'll be added as an
-        attachment within the email, defaults to None
+    :param image_path: The path to an optional image that'll be
+        added as an attachment within the email, defaults to None
     :type image_path: str, optional
-    :param domain: The domain of the smtp server, defaults to `smtp.gmail.com`
+    :param domain: The domain of the smtp server, defaults to
+        `smtp.gmail.com`
     :type domain: str, optional
     :param port: The port of the smtp server, defaults to 465
     :type port: int, optional
-    :param logger: An optional logger addon to log switches, defaults to None
+    :param logger: An optional logger addon to log switches, defaults
+        to None
     :type logger: class`logging.logger`, optional
     """
 
@@ -219,17 +238,18 @@ def send_email(email_address: str, email_password: str, email_receiver: str,
 
 
 def temp_folder_cleaner(extension: str, folder: str, max_items: int = 20):
-    """Checks a folder to ensure that it doesn't become overloaded with 
-    files of a certain extension by deleting the older files over the
-    max_items variable.
+    """Checks a folder to ensure that it doesn't become overloaded
+    with files of a certain extension by deleting the older files over
+    the max_items variable.
     
-    :param extension: The extension of the files needed to be kept in check
-        done like this to avoid the accidental deletions of misplaced files
+    :param extension: The extension of the files needed to be kept in
+        check done like this to avoid the accidental deletions of
+        misplaced files
     :type extension: str
     :param folder: The path to the folder to be kept in check
     :type folder: str
-    :param max_items: The maximum amount of files of the extention allowed
-        within the folder hen scanned, defaults to 20
+    :param max_items: The maximum amount of files of the extension
+        allowed within the folder hen scanned, defaults to 20
     :type max_items: int, optional
     """
 
@@ -258,7 +278,8 @@ def main():
 
     if not os.path.exists(config.capture_folder):
         os.mkdir(config.capture_folder)
-    # Ensures that the capture folder, used for storing images, is present.
+    # Ensures that the capture folder, used for storing images, is
+    # present.
 
     img_w = 640
     img_h = 480
@@ -269,15 +290,18 @@ def main():
     GPIO.setwarnings(False)
     log.debug(' GPIO.setwarnings set as False.')
     # Sets the mode to board, which refers to the pin, then allows the
-    # program can run if previous pins have been active but not deactivated.
+    # program can run if previous pins have been active but not
+    # deactivated.
 
     pwm = pigpio.pi()
-    # Creates and initialises pigpio which is used for Pulse Width Modulation.
+    # Creates and initialises pigpio which is used for Pulse Width
+    # Modulation.
 
     gpio_pin_setup(22, GPIO.IN, GPIO.PUD_DOWN, logger=log)
     gpio_pin_setup(18, GPIO.IN, GPIO.PUD_DOWN, logger=log)
-    # Sets up the following pins to be later used. GPIO.IN means they'll be
-    # input pins and GPIO.PUD_DOWN to steer the inputs to a known state.
+    # Sets up the following pins to be later used. GPIO.IN means
+    # they'll be input pins and GPIO.PUD_DOWN to steer the inputs
+    # to a known state.
 
     # Servo controlling the y-axis max cycle 2.5 to 5
     # Servo controlling the x-axis max cycle 2.5 to 12.5
@@ -326,17 +350,19 @@ def main():
     detector = ObjectDetector()
     detector_scan_step = 5
     lm_dict = {}
-    # Initiates the object detection module. Sets when the detector will scan
-    # the image, for better resource usage, and sets lm_dict to empty.
+    # Initiates the object detection module. Sets when the detector
+    # will scan the image, for better resource usage, and sets
+    # lm_dict to empty.
 
     entity_in_xrange = False
     entity_in_yrange = False
     # Used later to check when to shoot.
 
     y_height_bias = 140
-    # The leeways set how large will be the target centre box in pixels (*2).
-    # The y_height_bias will move the target box up to accommodate for
-    # projectile drop. Maybe dynamically set later.
+    # The leeways set how large will be the target centre box in
+    # pixels (*2). The y_height_bias will move the target box up
+    # to accommodate for projectile drop. Could be dynamically set
+    # but found it was a slight too taxing.
 
     y_leeway = 25
     y_margins = {
@@ -348,15 +374,16 @@ def main():
                     + y_height_bias
                     - 1)
     }
-    # Stores the y margins calculated by getting the centre point of the
-    # image, and then applying the leeway.
+    # Stores the y margins calculated by getting the centre point of
+    # the image, and then applying the leeway.
     # This is up here to save up on calculation resources.
 
     xpw_jumps = 50
     ypw_jumps = 20
-    # This will be used to +/- the pulse width to move it left/right up/down
-    # larger jumps mean less accurate but faster to aim, smaller the opposite.
-    # May be dynamically set later.
+    # This will be used to +/- the pulse width to move it left/right
+    # up/down larger jumps mean less accurate but faster to aim,
+    # smaller the opposite. Could be dynamically set but found it
+    # was a slight too taxing.
 
     counter, fps = 0, 0
     start_time = time.time()
@@ -371,18 +398,20 @@ def main():
 
     bool_switch_time = 5 * 60
     human_multiplier = 2
-    # Variables for controlling how long the timedbools should last, the
-    # human_multiplier is to increase time due to higher proof of a break in.
+    # Variables for controlling how long the timedbools should last,
+    # the human_multiplier is to increase time due to higher proof of
+    # a break in.
 
     door_opened = TimedBool(logger=log)
     motion_detected = TimedBool(logger=log)
     human_detected = TimedBool(logger=log)
-    # Used to only allow an incident to occur again after a certain amount of
-    # time passes. Log is passed through as logger to allow for logging.
+    # Used to only allow an incident to occur again after a certain
+    # amount of time passes. Log is passed through as logger to allow
+    # for logging.
 
     try:
-        # If an exception occurs the program will execute the exception code 
-        # and continue out of the try loop.
+        # If an exception occurs the program will execute the
+        # exception code and continue out of the try loop.
         while True:
             # Causes the code to indefinitely loop.
 
@@ -392,17 +421,19 @@ def main():
                     'Unable to read from webcam.'
                     'Please verify your webcam in config.py.'
                 )
-            # Stores if the camera was successfully accessed and the current
-            # visual feed of the camera. If the camera couldn't be accessed
-            # it will cause a RuntimeError and the program would stop.
+            # Stores if the camera was successfully accessed and the
+            # current visual feed of the camera. If the camera
+            # couldn't be accessed it will cause a RuntimeError and
+            # the program would stop.
 
             img = cv2.flip(img, -1)
             if counter % detector_scan_step == 0:
                 img = detector.find_object(img)
                 lm_dict = detector.find_position()
-            # Firstly flips the image both horizontally and vertically, then
-            # checks if the counter is a multiple of detector_scan_step and
-            # if so detect the image for objects and return objects.
+            # Firstly flips the image both horizontally and
+            # vertically, then checks if the counter is a multiple of
+            # detector_scan_step and if so detect the image for
+            # objects and return objects.
 
             counter += 1
             # A counter for both fps and detection calculations.
@@ -411,7 +442,8 @@ def main():
                     and door_opened() is False):
                 # A door opening has been detected, now on alert for
                 # additional triggers, to prevent false alarms.
-                # A timer has now been set till this trigger is deactivated.
+                # A timer has now been set till this trigger is
+                # deactivated.
 
                 door_opened.switch_for(bool_switch_time)
                 # Sets door_opened to true for bool_switch_time seconds.
@@ -430,9 +462,9 @@ def main():
                 )
                 temp_folder_cleaner('.png', config.capture_folder)
                 cv2.imwrite(f'{config.capture_folder}/{img_file_name}', img)
-                # Sets the output file's name then calls temp_folder_cleaner
-                # to ensure the folder is not being overloaded then writes
-                # the image to the folder.
+                # Sets the output file's name then calls
+                # temp_folder_cleaner to ensure the folder is not
+                # being overloaded then writes the image to the folder.
 
                 subject = 'Security Alert: Door Opened'
                 body = (
@@ -453,18 +485,21 @@ def main():
                     ', trigger will be active for '
                     f'{bool_switch_time / 60} minutes.'
                 )
-                # Sets the subject and body of the email and then passes it
-                # through to the send_email function with the image's path
-                # and the email account's credentials to send.
+                # Sets the subject and body of the email and then
+                # passes it through to the send_email function with
+                # the image's path and the email account's credentials
+                # to send.
 
             if (GPIO.input(18) == 1
                     and motion_detected() is False):
-                # Motion detected, now on alert for additional triggers,
-                # to prevent false alarms.
-                # A timer has now been set till this trigger is deactivated.
+                # Motion detected, now on alert for additional
+                # triggers, to prevent false alarms.
+                # A timer has now been set till this trigger is
+                # deactivated.
 
                 motion_detected.switch_for(bool_switch_time)
-                # Sets motion_detected to true for bool_switch_time seconds.
+                # Sets motion_detected to true for bool_switch_time
+                # seconds.
 
                 ctime = time.strftime('%b %d %Y %H:%M:%S')
                 # Gets the current time in
@@ -480,9 +515,9 @@ def main():
                 )
                 temp_folder_cleaner('.png', config.capture_folder)
                 cv2.imwrite(f'{config.capture_folder}/{img_file_name}', img)
-                # Sets the output file's name then calls temp_folder_cleaner
-                # to ensure the folder is not being overloaded then writes
-                # the image to the folder.
+                # Sets the output file's name then calls
+                # temp_folder_cleaner to ensure the folder is not
+                # being overloaded then writes the image to the folder.
 
                 subject = 'Security Alert: Motion Detected'
                 body = (
@@ -503,9 +538,10 @@ def main():
                     ', trigger will be active for '
                     f'{bool_switch_time / 60} minutes.'
                 )
-                # Sets the subject and body of the email and then passes it
-                # through to the send_email function with the image's path
-                # and the email account's credentials to send.
+                # Sets the subject and body of the email and then
+                # passes it through to the send_email function with
+                # the image's path and the email account's credentials
+                # to send.
 
             if ('person' in lm_dict
                     and human_detected() is False):
@@ -532,9 +568,9 @@ def main():
                 )
                 temp_folder_cleaner('.png', config.capture_folder)
                 cv2.imwrite(f'{config.capture_folder}/{img_file_name}', img)
-                # Sets the output file's name then calls temp_folder_cleaner
-                # to ensure the folder is not being overloaded then writes
-                # the image to the folder.
+                # Sets the output file's name then calls
+                # temp_folder_cleaner to ensure the folder is not
+                # being overloaded then writes the image to the folder.
 
                 subject = 'Security Alert: Human Detected'
                 body = (
@@ -557,24 +593,24 @@ def main():
                     f'{bool_switch_time * human_multiplier / 60}'
                     ' minutes.'
                 )
-                # Sets the subject and body of the email and then passes it
-                # through to the send_email function with the image's path
-                # and the email account's credentials to send.
+                # Sets the subject and body of the email and then
+                # passes it through to the send_email function with
+                # the image's path and the email account's credentials
+                # to send.
 
             if ('person' in lm_dict
                     and counter % detector_scan_step == 0
                     and config.turret_active):
-                # lm_dict['person'][0] should always have a centre point.
-                # Now targeting the centre point, if the turret not disabled
-                # and if a scan has occurred.
-
+                # lm_dict['person'][0] should always have a centre
+                # point. Now targeting the centre point, if the turret
+                # not disabled and if a scan has occurred.
                 log.info(
                     'Targeting'
                     f'X: {lm_dict["person"]["centre_x"]} '
                     f'Y: {lm_dict["person"]["centre_y"]}'
                 )
 
-                x_leeway = lm_dict['person'][0]['width'] / 2
+                x_leeway = lm_dict['person']['width'] / 2
                 x_margins = {
                     'left': int(
                         (img_w / 2)
@@ -591,8 +627,8 @@ def main():
 
                 x_in_range = range(x_margins['left'], x_margins['right'])
                 y_in_range = range(y_margins['up'], y_margins['down'])
-                # The ranges are used to create an area where the turret will
-                # stop trying to centre its target.
+                # The ranges are used to create an area where the
+                # turret will stop trying to centre its target.
 
                 x_out_range = {
                     'left': range(-1, x_margins['left']),
@@ -602,18 +638,19 @@ def main():
                     'up': range(-1, y_margins['up']),
                     'down': range(y_margins['down'], img_h + 1)
                 }
-                # Used to find where the target is and what side is it more
-                # to for later aiming.
+                # Used to find where the target is and what side is
+                # it more to for later aiming.
 
                 target_pos = {
-                    'x': lm_dict['person'][0]['centre_x'],
-                    'y': lm_dict['person'][0]['centre_y']
+                    'x': lm_dict['person']['centre_x'],
+                    'y': lm_dict['person']['centre_y']
                 }
                 # Gets the centre point of the target.
 
                 if target_pos['x'] not in x_in_range:
                     # Checks if the target x position is not within the
-                    # turret's crosshair, if not set entity_in_xrange to True.
+                    # turret's crosshair, if not set entity_in_xrange
+                    # to True.
 
                     entity_in_xrange = False
                     # Target not in x range makes sure not to shoot.
@@ -626,15 +663,16 @@ def main():
                         log.debug(' Over the range moving into range.')
                         xpulsewidth -= xpw_jumps
                         x_servo.set_servo_pw(xpulsewidth)
-                    # Checks if the target is out of range towards the left
-                    # or right and inch towards the target, by increasing or
-                    # reducing the xpulsewidth.
+                    # Checks if the target is out of range towards the
+                    # left or right and inch towards the target, by
+                    # increasing or reducing the xpulsewidth.
                 else:
                     entity_in_xrange = True
 
                 if target_pos['y'] not in y_in_range:
                     # Checks if the target y position is not within the
-                    # turret's crosshair, if not set entity_in_xrange to True.
+                    # turret's crosshair, if not set entity_in_xrange
+                    # to True.
 
                     entity_in_yrange = False
                     # Target not in y range makes sure not to shoot.
@@ -648,8 +686,8 @@ def main():
                         ypulsewidth -= ypw_jumps
                         y_servo.set_servo_pw(ypulsewidth)
                     # Checks if the target is out of range being too up
-                    # or too down and inch towards the target, by increasing or
-                    # reducing the ypulsewidth.
+                    # or too down and inch towards the target, by
+                    # increasing or reducing the ypulsewidth.
                 else:
                     entity_in_yrange = True
 
@@ -661,47 +699,19 @@ def main():
                     and entity_in_yrange
                     and (door_opened()
                          or motion_detected())):
-                # Checks if the turret is centred and if the turret is not
-                # disabled and if so shoot, else stop.
+                # Checks if the turret is centred and if the turret
+                # is not disabled and if so shoot, else stop.
                 f_servo.set_servo_pw(fpulsewidth)
             else:
                 f_servo.set_servo_pw(0)
-
-            # This is hell, what the nth ring of hell looks like, almost
-            # insanity just at the ridge of it, coding this was much worse of
-            # a feeling then looking at this right now, may god have mercy
-            # for the soul trying to decipher what I've written because I know
-            # he didn't have any for me when writing any of this. I never was
-            # a mathematician, nor an engineer, and now I know why. If it
-            # wasn't for trying to follow the pep8 and normal programming
-            # standards I'd have much more of my mental capacity back, and
-            # understanding this would've literally sent you into the hellish
-            # pits of programmer hell. Like just trying to figure out how to
-            # make the turret correctly aim at me almost made me wish it was
-            # a real turret made by samsung located at the DMZ border looking
-            # at me as if I was national trespasser until I realised that I
-            # spent 2 hours debugging a simple issue where I used img_h
-            # instead of img_w when calculating the x-axis area of when to
-            # stop. When finding this out I was thrown into an unbound mental 
-            # psychotic rage, likely on par with the mental state of those
-            # contractors that asked samsung to create those cyberpunk-esk
-            # AI driven killing machine turrets located at the DMZ border.
-            # Knowing all of this makes me, again, thankful that I'm not
-            # employed to create an actual death machine because I know if
-            # it was up to me to create one, it would just be an assault rifle
-            # with its trigger duct tapped down on a regular spinning motor,
-            # because I know I'm not dealing with this ever again, and if
-            # I'm ever forced to take part in creating a killing machine
-            # I'd rather volunteer to be its first test subject.
-            # Thanks for reading my rant.
 
             if counter % fps_avg_frame_count == 0:
                 end_time = time.time()
                 fps = fps_avg_frame_count / (end_time - start_time)
                 start_time = time.time()
-            # Calculates the fps by seeing how much time has passes since
-            # the previous fps_avg_frame_count (10) frames, while resetting
-            # the start time.
+            # Calculates the fps by seeing how much time has passes
+            # since the previous fps_avg_frame_count (10) frames,
+            # while resetting the start time.
 
             text_location = (left_margin, row_size)
             cv2.putText(
@@ -714,11 +724,13 @@ def main():
 
             cv2.imshow('Camera', img)
             cv2.waitKey(1)
-            # Shows the image output and waits 1 millisecond for input to
-            # prevent running the thread infinitely for keyboard inputs.
+            # Shows the image output and waits 1 millisecond for
+            # input to prevent running the thread infinitely for
+            # keyboard inputs.
     except KeyboardInterrupt:
-        # When the program is stopped, by ctrl+c it will execute the commands
-        # below to stop the servos, reset all GPIO pins, and log the exit.
+        # When the program is stopped, by ctrl+c it will execute the
+        # commands below to stop the servos, reset all GPIO pins, and
+        # log the exit.
         pwm.stop()
         GPIO.cleanup()
         log.exception(' Closing program due to keyboard interrupt.')
